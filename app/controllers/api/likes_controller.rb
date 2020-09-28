@@ -1,27 +1,30 @@
 class Api::LikesController < ApplicationController
   before_action :find_like, only: [:destroy]
-  after_action  :like_count, only: [:create]
 
   def index
-    @likes = Like.all
-    render json: @likes.as_json
+     @like = Like.all
+    render json: @like.as_json
   end
 
   def create
     @like = Like.new(like_params)
     unless Like.where("user_id = #{@like.user_id}").where(["likeable_type LIKE ?", "%#{@like.likeable_type}%"]).where("likeable_id = #{@like.likeable_id}").exists?
       @like.state = true
-     @like.save
+      @like.save
+      @object = @like.likeable_type.constantize.find(@like.likeable_id)
+      @object.increment!(:votesCount)
      end
-      render json: @like.as_json
+      render json: @object.as_json
   end
 
   def destroy
-    @user.destroy
-    redirect_to users_path
+    @object = @like.likeable_type.constantize.find(@like.likeable_id)
+    @object.votesCount -= 1
+    @object.save
+    @like.destroy
+    render json: @object.as_json
+    #redirect_to api_likes_path
   end
-
-
 
   private def like_params
     params.require(:like).permit(:state,:user_id,:likeable_id,:likeable_type)
@@ -29,15 +32,6 @@ class Api::LikesController < ApplicationController
 
   private def find_like
     @like = Like.find(params[:id])
-  end
-
-  private def like_count
-    @like.votes_count = 0
-    @post.likes.each do |like|
-      if like.state = true
-        @post.increment!(:votes_count)
-      end
-    end
   end
 
 end

@@ -16,7 +16,7 @@ class Api::CommentsController < ApplicationController
   end
 
   def destroy
-    @user.destroy
+    @comment.destroy
     redirect_to users_path
   end
 
